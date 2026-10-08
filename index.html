@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f5f7">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>興和工業所 AI Portal</title>
+<style>
+/* ============================================================
+   興和工業所 AIポータル ― スタイル
+   構成: ①基盤 ②ナビ ③ホーム ④下層ページ ⑤検索 ⑥レスポンシブ
+   ※ 中身の追加・修正は data.js だけを触ればOKです。
+   ============================================================ */
+
+/* ---------- ① 基盤 ---------- */
+:root{
+  --ink:#1d1d1f; --muted:#6e6e73; --soft:#8e8e93;
+  --paper:#f5f5f7; --white:#fff;
+  --line:rgba(0,0,0,.09); --hair:rgba(0,0,0,.055);
+  --blue:#0071e3; --green:#12855c;
+  --r-lg:26px; --r-md:20px; --r-sm:14px;
+  --sh-1:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.05);
+  --sh-2:0 2px 4px rgba(0,0,0,.05),0 18px 44px rgba(0,0,0,.10);
+  --grad:linear-gradient(120deg,#4c8dff,#8b5cf6 55%,#d946ef);
+}
+::selection{background:#d6e3ff}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* hidden属性を必ず効かせる。カードは display:flex を持つので、
+   ブラウザ既定の [hidden]{display:none} に勝ってしまい絞り込みが効かなかった（2026-08-26修正）。*/
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  margin:0;color:var(--ink);
+  background:
+    radial-gradient(1100px 460px at 6% -4%,rgba(88,140,255,.075),transparent 62%),
+    radial-gradient(1000px 500px at 97% 2%,rgba(168,105,255,.06),transparent 62%),
+    var(--paper);
+  background-attachment:fixed;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI Variable Text","Segoe UI","Yu Gothic UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+  font-size:15px;line-height:1.72;letter-spacing:-.014em;
+  word-break:normal;line-break:strict;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+body.lock{overflow:hidden}
+button,input{font:inherit}
+button{color:inherit}
+a{color:inherit}
+h1,h2,h3{margin:0;letter-spacing:-.032em;text-wrap:balance;font-weight:650}
+p{margin:0;overflow-wrap:break-word;text-wrap:pretty}
+.inner{width:min(1240px,calc(100% - 48px));margin-inline:auto}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:8px}
+
+/* ---------- ② ナビゲーション ---------- */
+.global-nav{
+  position:fixed;top:14px;left:50%;translate:-50% 0;z-index:100;
+  width:min(1000px,calc(100% - 28px));height:54px;padding:0 8px 0 16px;
+  display:flex;align-items:center;color:#f5f5f7;
+  background:rgba(22,22,24,.68);border:.5px solid rgba(255,255,255,.14);
+  border-radius:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 10px 34px rgba(0,0,0,.24);
+  backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);
+}
+.brand{display:flex;align-items:center;gap:9px;flex:none;padding:0 14px 0 0;border:0;background:none;color:#fff;cursor:pointer}
+.brand-mark{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:800;
+  background:linear-gradient(150deg,#a78bfa,#38bdf8);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 4px 14px rgba(80,160,255,.42)}
+.brand-name{font-size:11.5px;font-weight:700;letter-spacing:.05em}
+.nav-links{display:flex;align-items:center;gap:2px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.nav-links::-webkit-scrollbar{display:none}
+.nav-link{border:0;background:transparent;color:#c6c6cb;white-space:nowrap;padding:8px 12px;border-radius:10px;cursor:pointer;
+  font-size:11.5px;font-weight:600;letter-spacing:-.005em;transition:color .18s,background-color .18s}
+.nav-link:hover{color:#fff;background:rgba(255,255,255,.09)}
+.nav-link.on{color:#141416;background:#fff}
+.nav-search{margin-left:auto;flex:none;width:34px;height:34px;padding:0;border:0;border-radius:11px;
+  background:rgba(255,255,255,.09);color:#fff;cursor:pointer;font-size:18px;line-height:1;transition:background-color .18s}
+.nav-search:hover{background:rgba(255,255,255,.18)}
+
+/* ---------- ③ ホーム ---------- */
+.view{display:none}
+.view.active{display:block;animation:reveal .32s ease both}
+@keyframes reveal{from{opacity:0;transform:translateY(5px)}}
+
+.hero{position:relative;overflow:hidden;isolation:isolate;background:#07080c;color:#fff;padding:126px 0 58px}
+.hero:before,.page-hero .grid-dots{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.5) .75px,transparent .75px);background-size:24px 24px;
+  opacity:.06;mask-image:linear-gradient(115deg,transparent 26%,#000 60%)}
+@keyframes aurora{0%{transform:rotate(0deg) scale(1)}100%{transform:rotate(5deg) scale(1.07)}}
+.hero-line{position:absolute;left:0;right:0;bottom:0;height:2px;z-index:2;pointer-events:none;
+  background:linear-gradient(90deg,transparent 2%,#4c8dff 26%,#8b5cf6 52%,#d946ef 74%,transparent 98%);opacity:.6}
+.hero-glow{position:absolute;z-index:-2;width:min(1150px,120vw);aspect-ratio:1.35;right:-14%;top:50%;translate:0 -50%;
+  background:
+    radial-gradient(closest-side at 62% 42%,rgba(255,255,255,.55),transparent 62%),
+    radial-gradient(closest-side at 55% 45%,#4cc8ff 0,rgba(76,200,255,0) 66%),
+    radial-gradient(closest-side at 70% 58%,#7b5cf5 0,rgba(123,92,245,0) 68%),
+    radial-gradient(closest-side at 44% 66%,rgba(236,72,153,.75),rgba(236,72,153,0) 70%);
+  filter:blur(50px);opacity:.78;animation:aurora 12s ease-in-out infinite alternate}
+.hero-glow:after{content:"";position:absolute;inset:0;
+  background:radial-gradient(closest-side at 38% 70%,rgba(236,72,153,.55),transparent 66%);filter:blur(46px)}
+.hero-shade{position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(90deg,#07080c 0 34%,rgba(7,8,12,.72) 58%,rgba(7,8,12,.18) 88%),
+             linear-gradient(0deg,#07080c 0,transparent 46%)}
+.hero-copy{width:min(1240px,calc(100% - 48px));margin-inline:auto;position:relative}
+.kicker{color:#a9a9b3;font-size:10.5px;font-weight:700;letter-spacing:.24em;text-transform:uppercase}
+.hero h1{margin:14px 0 12px;font-size:clamp(40px,6vw,72px);line-height:1.02;letter-spacing:-.045em;font-weight:700;
+  background:linear-gradient(176deg,#fff 30%,#cdd0e8 72%,#aab3f0 100%);background-clip:text;-webkit-background-clip:text;color:transparent}
+.hero-lead{max-width:640px;color:#b7b8c2;font-size:14px;line-height:1.7}
+.hero-actions{display:flex;gap:10px;margin-top:26px}
+.primary,.secondary{min-height:42px;padding:0 22px;border:0;border-radius:980px;cursor:pointer;font-size:12.5px;font-weight:650;
+  transition:background-color .18s,box-shadow .18s,opacity .18s}
+.primary{background:#fff;color:#111;box-shadow:inset 0 -1px 0 rgba(0,0,0,.06)}
+.primary:hover{box-shadow:0 0 0 3px rgba(139,92,246,.28),0 8px 26px rgba(120,120,255,.30)}
+.secondary{color:#fff;background:rgba(255,255,255,.10);border:.5px solid rgba(255,255,255,.22)}
+.secondary:hover{background:rgba(255,255,255,.18)}
+
+.home-main{padding:30px 0 84px}
+
+/* 主役：5つの入口 */
+.quick-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.quick-card{
+  position:relative;overflow:hidden;min-height:200px;padding:24px;text-align:left;cursor:pointer;
+  display:flex;flex-direction:column;
+  border:.5px solid var(--hair);border-radius:var(--r-lg);background:var(--white);
+  box-shadow:var(--sh-1);transition:box-shadow .22s ease,border-color .22s ease,transform .22s ease}
+.quick-card:hover{box-shadow:var(--sh-2),0 16px 40px color-mix(in srgb,var(--tone) 16%,transparent);
+  border-color:color-mix(in srgb,var(--tone) 26%,transparent);transform:translateY(-4px)}
+.quick-card:before{content:"";position:absolute;left:0;top:0;width:100%;height:3px;z-index:1;
+  background:linear-gradient(90deg,var(--tone),transparent 72%);opacity:.5;transition:opacity .22s}
+.quick-card:hover:before{opacity:.9}
+.quick-card:after{content:"";position:absolute;width:min(115%,340px);aspect-ratio:1;right:-16%;top:-40%;border-radius:50%;
+  background:var(--orb);filter:blur(26px);opacity:.19;transition:opacity .22s}
+.quick-card:hover:after{opacity:.28}
+.quick-head{position:relative;display:flex;align-items:center}
+.quick-icon{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+  background:linear-gradient(160deg,#fff,var(--tint) 72%);color:var(--tone);font-size:17px;font-weight:700;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tone) 16%,transparent);
+  transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
+.quick-card:hover .quick-icon{transform:scale(1.08) rotate(-5deg)}
+.quick-count{margin-left:auto;padding:3px 10px;border-radius:980px;background:rgba(255,255,255,.72);
+  border:.5px solid var(--hair);color:var(--tone);font-size:9.5px;font-weight:800;font-variant-numeric:tabular-nums}
+.quick-go{margin-left:7px;color:var(--tone);font-size:17px;line-height:1}
+.quick-card h3{position:relative;margin:14px 0 4px;font-size:17px;line-height:1.35}
+.quick-card p{position:relative;color:var(--muted);font-size:12px;line-height:1.6}
+.quick-list{position:relative;list-style:none;margin:auto 0 0;padding:11px 0 0;border-top:1px solid var(--line);
+  display:flex;flex-direction:column;gap:5px}
+.quick-list li{position:relative;padding-left:12px;color:#4a4a50;font-size:11px;line-height:1.5;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quick-list li:before{content:"";position:absolute;left:1px;top:.62em;width:4px;height:4px;border-radius:50%;
+  background:var(--tone);opacity:.5}
+
+/* 見出し（セグメント付き） */
+.section-heading{display:flex;align-items:center;gap:16px;margin:46px 0 16px}
+.section-heading:before{content:"";flex:none;width:5px;height:21px;margin-right:-6px;border-radius:3px;background:var(--grad)}
+.section-heading h2{font-size:22px;letter-spacing:-.038em;flex:none}
+.section-heading .note{color:var(--soft);font-size:11.5px;flex:none}
+.text-link{margin-left:auto;flex:none;border:0;background:none;color:var(--blue);padding:4px 2px;cursor:pointer;
+  font-size:12px;font-weight:650;white-space:nowrap}
+.text-link:hover{text-decoration:underline}
+/* 最新情報＋AIトピックス（切替なしで両方を1ブロックに） */
+.brief{display:grid;grid-template-columns:1.24fr 1fr 1fr;gap:14px}
+.brief-feature{
+  position:relative;overflow:hidden;min-height:186px;padding:24px;text-align:left;cursor:pointer;
+  display:flex;flex-direction:column;justify-content:center;
+  border:0;border-radius:var(--r-lg);color:#fff;
+  background:radial-gradient(120% 130% at 96% 4%,rgba(129,86,245,.55),transparent 52%),
+             radial-gradient(90% 120% at 8% 100%,rgba(0,140,255,.34),transparent 56%),
+             linear-gradient(150deg,#1b2233,#12151f);
+  box-shadow:var(--sh-1);transition:box-shadow .22s ease,transform .22s ease}
+.brief-feature:hover{box-shadow:var(--sh-2),0 18px 44px rgba(104,86,240,.30);transform:translateY(-3px)}
+.brief-feature:after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),inset 0 0 0 .5px rgba(255,255,255,.07)}
+.brief-feature .meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#a4a9ba;font-size:10px;font-weight:650}
+.brief-feature h3{margin:11px 0 7px;font-size:19px;line-height:1.38;letter-spacing:-.03em}
+.brief-feature p{color:#b9becd;font-size:11.5px;line-height:1.72;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pill{display:inline-block;padding:3px 9px;border-radius:980px;background:linear-gradient(120deg,#7c5cf6,#3f8cff);color:#fff;font-size:9px;font-weight:800;letter-spacing:.06em;box-shadow:0 2px 10px rgba(110,92,246,.45)}
+.brief-col{display:flex;flex-direction:column;padding:13px 18px 8px;border:.5px solid var(--hair);
+  border-radius:var(--r-lg);background:var(--white);box-shadow:var(--sh-1)}
+.brief-cap{display:flex;align-items:center;gap:9px;color:var(--soft);font-size:9.5px;font-weight:800;letter-spacing:.09em}
+.brief-cap:after{content:"";flex:1;height:1px;background:var(--line)}
+.brief-rows{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-evenly}
+.brief-row{display:grid;grid-template-columns:44px 1fr;gap:10px;align-items:baseline;padding:6px 0;
+  text-align:left;border:0;background:none;cursor:pointer;width:100%}
+.brief-row.dot{grid-template-columns:12px 1fr;gap:8px}
+.brief-row time{color:var(--soft);font-size:10px;font-variant-numeric:tabular-nums}
+.brief-row .bullet{position:relative;top:-1px;width:5px;height:5px;border-radius:50%;background:#a9aab3}
+.brief-row b{font-size:11.5px;font-weight:600;line-height:1.55;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.brief-row:hover b{color:var(--blue)}
+
+/* ---------- ④ 下層ページ ---------- */
+.page-hero{position:relative;overflow:hidden;isolation:isolate;color:#fff;background:#07080c;height:360px;padding-top:88px;display:flex;align-items:center}
+.page-hero:before{content:"";position:absolute;z-index:-2;width:840px;height:840px;right:-140px;top:-380px;border-radius:50%;
+  background:var(--page-orb);filter:blur(46px);opacity:.85}
+.page-hero:after{content:"";position:absolute;inset:0;z-index:-1;
+  background:radial-gradient(rgba(255,255,255,.045) .75px,transparent .75px) 0 0/24px 24px,
+             linear-gradient(90deg,#07080c 0 38%,transparent 78%),linear-gradient(0deg,#07080c 0,transparent 40%)}
+.page-hero .page-hero-copy{position:relative}
+.page-hero-copy{width:min(1240px,calc(100% - 48px));margin-inline:auto}
+.back{border:0;background:none;color:#b3b4bd;padding:0;cursor:pointer;font-size:11.5px}
+.back:hover{color:#fff}
+.page-hero h1{margin:16px 0 12px;font-size:clamp(40px,6vw,68px);line-height:1.02;letter-spacing:-.05em;font-weight:700}
+.page-hero p{max-width:620px;color:#b7b8c2;font-size:14px}
+.page-word{position:absolute;right:3%;bottom:-24px;z-index:-1;font-size:clamp(80px,14vw,180px);font-weight:800;line-height:1;
+  letter-spacing:-.09em;color:rgba(255,255,255,.055)}
+.page-content{padding:44px 0 96px}
+.filter-bar{position:sticky;top:80px;z-index:20;display:flex;gap:3px;width:max-content;max-width:100%;margin-bottom:26px;padding:5px;
+  border-radius:980px;background:rgba(255,255,255,.82);border:.5px solid rgba(255,255,255,.9);
+  box-shadow:0 8px 28px rgba(0,0,0,.10);backdrop-filter:blur(22px) saturate(180%);overflow:auto;scrollbar-width:none}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter{border:0;background:transparent;padding:8px 16px;border-radius:980px;white-space:nowrap;cursor:pointer;color:#5f5f65;
+  font-size:11.5px;font-weight:650;transition:background-color .18s,color .18s}
+.filter:hover{background:rgba(0,0,0,.05)}
+.filter.on{background:linear-gradient(135deg,#1d1d22,#312a4a);color:#fff;box-shadow:0 4px 14px rgba(49,42,74,.35)}
+
+/* はじめての3ステップ（使い方・資料ページの先頭） */
+.firststep{margin:-4px 0 24px;padding:20px 26px 22px;border:.5px solid var(--hair);border-radius:var(--r-lg);
+  background:linear-gradient(120deg,#f4f9ff,#fff 58%);box-shadow:var(--sh-1)}
+.firststep-cap{color:#15679f;font-size:11px;font-weight:800;letter-spacing:.06em}
+.firststep-list{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:12px 0 0;padding:0;list-style:none}
+.firststep-list li{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;line-height:1.8;color:#3a3a40}
+.firststep-list a{color:var(--blue);font-weight:650;text-decoration:none}
+.firststep-list a:hover{text-decoration:underline}
+.step-no{flex:0 0 auto;width:20px;height:20px;margin-top:3px;border-radius:50%;background:#1d1d1f;color:#fff;
+  font-size:10.5px;font-weight:800;display:grid;place-items:center}
+
+.card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.content-card{position:relative;overflow:hidden;min-height:268px;padding:26px;display:flex;flex-direction:column;
+  border:.5px solid var(--hair);border-radius:var(--r-lg);background:var(--white);text-decoration:none;
+  box-shadow:var(--sh-1);transition:box-shadow .22s ease,border-color .22s ease,transform .22s ease}
+.content-card:before{content:"";position:absolute;width:170px;height:170px;right:-70px;top:-76px;border-radius:50%;
+  background:var(--card-orb,linear-gradient(145deg,#79d8ff,#7165f1));filter:blur(14px);opacity:.16;transition:opacity .22s}
+.content-card:hover{box-shadow:var(--sh-2),0 18px 46px rgba(96,96,180,.14);border-color:rgba(70,70,140,.16);transform:translateY(-4px)}
+.content-card:after{content:"";position:absolute;left:0;right:0;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(120,120,220,.35),transparent);opacity:0;transition:opacity .22s}
+.content-card:hover:after{opacity:1}
+.content-card:hover:before{opacity:.26}
+.tags{position:relative;display:flex;gap:6px;flex-wrap:wrap}
+.tag{display:inline-block;border-radius:980px;background:#f1f1f4;color:#55555b;padding:4px 10px;font-size:9.5px;font-weight:800}
+.tag.rule{background:#fdeef0;color:#b4304a}
+.tag.beginner{background:#e9f3ff;color:#15679f}
+.tag.practice{background:#e7f7f1;color:#0a7a55}
+.content-card h3{position:relative;max-width:94%;margin:18px 0 9px;font-size:18px;line-height:1.42}
+.content-card p{position:relative;color:var(--muted);font-size:12.5px;line-height:1.85}
+.card-footer{margin-top:auto;padding-top:18px;color:var(--blue);font-size:11.5px;font-weight:650}
+.department{position:relative;color:#8a8a90;font-size:10px;font-weight:800;letter-spacing:.09em}
+.outcome{margin:auto -12px -12px;padding:12px;border-radius:var(--r-sm);background:#ecf8f2;color:#0a7a55;font-size:12px;font-weight:700}
+.tool-place{margin:auto -12px -12px;padding:12px;border-radius:var(--r-sm);background:#f2eeff;color:#6541c4;font-size:11.5px;font-weight:650}
+
+/* 並べ替えモード */
+.card-grid.editing .content-card{cursor:grab;outline:2px dashed #8b5cf6;outline-offset:-3px}
+.card-grid.editing .content-card.dragover{outline:3px solid #8b5cf6;transform:scale(.985)}
+.reorder-bar{position:fixed;left:50%;bottom:18px;translate:-50%;z-index:300;display:flex;gap:14px;align-items:center;
+  padding:12px 20px;border-radius:14px;background:#1d1d22;color:#fff;font-size:12.5px;box-shadow:0 14px 40px rgba(0,0,0,.4)}
+.reorder-bar b{color:#c4b5fd}
+.reorder-bar button{border:0;border-radius:980px;padding:7px 14px;cursor:pointer;font-size:12px;font-weight:700;background:#8b5cf6;color:#fff}
+.reorder-bar button#reorderExit{background:rgba(255,255,255,.16)}
+.reorder-bar em{font-style:normal;color:#9fe6c4;font-size:11.5px;max-width:360px}
+
+/* 活用事例：スライド画像つきカード */
+.case-card{padding:0;min-height:0;overflow:hidden}
+.case-card:before{display:none}
+.case-shot{position:relative;display:block;aspect-ratio:16/9;overflow:hidden;
+  background:linear-gradient(145deg,#eaeef5,#dfe5ef);border-bottom:1px solid var(--line)}
+.case-shot img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
+.case-card:hover .case-shot img{transform:scale(1.035)}
+.case-shot.blank:after{content:attr(data-word);position:absolute;inset:0;display:grid;place-items:center;
+  color:#a6adbb;font-size:13px;font-weight:700;letter-spacing:.02em}
+.case-body{flex:1;display:flex;flex-direction:column;padding:20px 22px 20px}
+.case-card .department{margin-bottom:9px}
+.case-card h3{margin:0 0 8px;font-size:17px}
+.case-card .outcome{margin:auto 0 0;border-radius:12px}
+.case-card .card-footer{padding-top:12px}
+.app-card .department{margin:9px 0 0}
+.app-card .outcome{margin:12px 0 0;border-radius:12px}
+.app-card .card-footer{padding-top:12px}
+/* 動画カード（YouTubeへのリンク集）。押すと新しいタブでYouTubeが開く */
+.video-card .tool-place{margin:12px 0 0;padding:10px 12px;border-radius:12px;background:#fff0f1;color:#b4304a}
+.video-card .card-footer{padding-top:12px}
+.video-card h3{display:flex;gap:9px;align-items:flex-start}
+.video-card .play{flex:none;width:22px;height:22px;margin-top:2px;border-radius:7px;display:grid;place-items:center;
+  background:#e0304f;color:#fff;font-size:9px}
+.page-note{margin:-6px 0 24px;padding:13px 16px;border:.5px solid var(--hair);border-radius:14px;
+  background:#fbfbfd;color:var(--muted);font-size:12px;line-height:1.7}
+.page-note b{color:#2a2a30}
+
+.case-note{margin-top:12px;color:var(--soft);font-size:10.5px}
+
+.timeline{display:grid;gap:12px}
+.timeline-item{display:grid;grid-template-columns:118px 1fr;gap:22px;padding:24px 26px;border:.5px solid var(--hair);
+  border-radius:var(--r-lg);background:var(--white);box-shadow:var(--sh-1);transition:box-shadow .22s,border-color .22s}
+.timeline-item:hover{box-shadow:var(--sh-2);border-color:rgba(0,0,0,.10)}
+.timeline-item time{color:#84848a;font-size:11px;font-weight:650;font-variant-numeric:tabular-nums}
+.timeline-item h3{margin-bottom:6px;font-size:17px}
+.timeline-item p{color:var(--muted);font-size:12.5px;line-height:1.85}
+/* ホームの一覧から押して飛んできた記事を、少しのあいだ光らせて示す */
+.timeline-item.flash{border-color:rgba(48,116,237,.55);box-shadow:0 0 0 3px rgba(48,116,237,.14),var(--sh-2)}
+
+.faq-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.faq-item{padding:0 24px;border:.5px solid var(--hair);border-radius:var(--r-lg);background:var(--white);
+  box-shadow:var(--sh-1);transition:box-shadow .22s,border-color .22s}
+.faq-item:hover{box-shadow:var(--sh-2);border-color:rgba(0,0,0,.10)}
+.faq-item summary{display:flex;align-items:center;gap:12px;padding:22px 0;list-style:none;cursor:pointer;font-size:15px;font-weight:650;line-height:1.55}
+.faq-item summary::-webkit-details-marker{display:none}
+.qmark{flex:none;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700;
+  background:linear-gradient(150deg,#9163ff,#e653ab)}
+.answer{padding:16px 0 22px 42px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px;line-height:1.9}
+.empty{padding:60px 20px;text-align:center;color:var(--muted)}
+
+/* ---------- ⑤ 検索 ---------- */
+.search-layer{position:fixed;inset:0;z-index:200;display:none;padding:88px 24px 40px;overflow:auto;
+  background:rgba(245,245,247,.86);backdrop-filter:blur(34px) saturate(160%);-webkit-backdrop-filter:blur(34px) saturate(160%)}
+.search-layer.open{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0}}
+.search-panel{width:min(860px,100%);margin-inline:auto}
+.search-head{display:flex;align-items:center;gap:12px}
+.search-input{width:100%;height:60px;padding:0 24px;border:.5px solid var(--hair);border-radius:var(--r-md);background:#fff;outline:none;
+  box-shadow:var(--sh-2);font-size:17px}
+.search-input:focus{box-shadow:0 0 0 4px rgba(0,113,227,.16),var(--sh-2)}
+.search-close{flex:none;width:46px;height:46px;border:0;border-radius:50%;background:#1d1d1f;color:#fff;cursor:pointer;font-size:17px}
+.search-status{margin:22px 4px 12px;color:var(--muted);font-size:12px}
+.result-list{display:grid;gap:8px}
+.result{padding:16px 20px;border:.5px solid var(--hair);border-radius:var(--r-md);background:#fff;text-align:left;cursor:pointer;
+  box-shadow:var(--sh-1);transition:box-shadow .18s}
+.result:hover{box-shadow:var(--sh-2)}
+.result small{color:var(--blue);font-weight:700;font-size:10.5px}
+.result b{display:block;margin-top:3px;font-size:14px}
+.result p{margin-top:3px;color:var(--muted);font-size:11.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.site-footer{width:min(1240px,calc(100% - 48px));margin-inline:auto;padding:20px 0 32px;border-top:1px solid var(--line);color:#85858b;font-size:10px}
+
+/* ============================================================
+   ⑥ デスクトップ：ホームを1画面に収める（1920×780で検証）
+   ============================================================ */
+@media (min-width:901px){
+  /* ホーム表示中だけ、フッター込みでちょうど1画面に収める */
+  body.home-active{overflow:hidden}
+  body.home-active .shell{height:100vh;min-height:660px;display:flex;flex-direction:column;overflow:hidden}
+  body.home-active .site-footer{flex:none;padding:9px 0 12px}
+  body.home-active #view-home.active{flex:1;height:auto;min-height:0}
+  body.home-active #views{flex:1;min-height:0;display:flex;flex-direction:column}
+  #view-home.active{height:100vh;min-height:660px;overflow:hidden;display:flex;flex-direction:column}
+  #view-home .hero{flex:none;height:186px;padding:0;display:flex;align-items:center}
+  #view-home .hero-glow{width:1000px;right:-6%;opacity:.58;filter:blur(46px)}
+  #view-home .hero-copy{padding-top:36px}
+  #view-home .kicker{font-size:9.5px}
+  #view-home .hero h1{margin:8px 0 7px;font-size:clamp(34px,3.2vw,46px);letter-spacing:-.048em}
+  #view-home .hero-lead{max-width:560px;font-size:12px;line-height:1.6}
+  #view-home .hero-actions{position:absolute;right:0;top:50%;translate:0 -50%;margin:0}
+  #view-home .primary,#view-home .secondary{min-height:38px;padding:0 18px;font-size:11.5px}
+
+  #view-home .home-main{flex:1;min-height:0;padding:14px 0 16px}
+  #view-home .home-main>.inner{height:100%;display:grid;
+    grid-template-rows:minmax(140px,1fr) auto minmax(180px,.92fr);gap:10px}
+
+  #view-home .quick-grid{height:100%;min-height:0}
+  #view-home .quick-card{min-height:0;height:100%;padding:18px 20px;border-radius:22px}
+  #view-home .quick-card:after{top:-40%;right:-16%;opacity:.16}
+  #view-home .quick-icon{width:32px;height:32px;border-radius:10px;font-size:14px}
+  #view-home .quick-card h3{margin:12px 0 3px;font-size:16px}
+  #view-home .quick-card p{font-size:11px}
+  #view-home .quick-list{padding-top:9px;gap:4px}
+  #view-home .quick-list li{font-size:10.5px}
+
+  #view-home .section-heading{margin:0;min-height:30px}
+  #view-home .section-heading h2{font-size:19px}
+
+  #view-home .brief{height:100%;min-height:0}
+  #view-home .brief-feature{height:100%;min-height:0;padding:20px 22px;border-radius:22px}
+  #view-home .brief-feature h3{margin:9px 0 6px;font-size:17px}
+  #view-home .brief-feature p{font-size:11px;line-height:1.68;-webkit-line-clamp:3}
+  #view-home .brief-col{height:100%;min-height:0;padding:12px 16px 6px;border-radius:22px}
+}
+@media (min-width:901px) and (max-height:760px){
+  #view-home .hero{height:168px}
+  #view-home .hero h1{font-size:33px}
+  #view-home .home-main{padding:10px 0 12px}
+  #view-home .home-main>.inner{grid-template-rows:minmax(132px,1fr) auto minmax(164px,.84fr);gap:8px}
+  #view-home .quick-card h3{margin-top:9px;font-size:15px}
+  #view-home .quick-card p{font-size:10.5px}
+  #view-home .brief-feature p{-webkit-line-clamp:2}
+  #view-home .brief-row{padding:4px 0}
+  #view-home .quick-list li:nth-child(n+5){display:none}
+  #view-home .brief-row:nth-child(4){display:none}
+}
+
+/* 画面の高さが足りないPCへの逃げ道（2026-09-02）
+   ホームは「1画面に収める」ために body.home-active{overflow:hidden} でスクロールを止めている。
+   ところが高さ660px未満の画面（1366x768のノート、拡大表示150%など）では中身が入りきらず、
+   下が見えないうえスクロールもできない状態になっていた（現場から報告あり）。
+   その高さでは1画面表示をあきらめ、ふつうに縦スクロールできる形に戻す。
+   ※必ず上の @media (min-width:901px) より後ろに置くこと（先に書くと打ち消されて効かない） */
+@media (min-width:901px) and (max-height:659px){
+  body.home-active{overflow:visible}
+  body.home-active .shell{height:auto;overflow:visible}
+  #view-home.active{height:auto;overflow:visible}
+}
+
+/* ---------- タブレット・スマホ ---------- */
+@media (max-width:1000px){
+  .brand-name{display:none}
+  .card-grid,.quick-grid{grid-template-columns:repeat(2,1fr)}
+  .firststep-list{grid-template-columns:1fr}
+  .brief{grid-template-columns:1fr 1fr}
+  .brief-feature{grid-column:span 2}
+  .page-word{right:-2%}
+}
+@media (max-width:760px){
+  .inner,.hero-copy,.page-hero-copy,.site-footer{width:calc(100% - 28px)}
+  .global-nav{top:9px;height:52px;width:calc(100% - 18px);padding-left:12px}
+  .brand{padding-right:4px}
+  .nav-link{font-size:11px;padding:7px 9px}
+  .hero{padding:112px 0 46px}
+  .hero h1{font-size:40px}
+  .hero-lead{font-size:13px}
+  .quick-grid{grid-template-columns:1fr;gap:10px}
+  .quick-card{min-height:0;padding:20px}
+  .section-heading{flex-wrap:wrap;gap:10px;margin-top:38px}
+  .section-heading h2{font-size:20px}
+  .section-heading .note{display:none}
+  .text-link{margin-left:0;order:3}
+  .brief{grid-template-columns:1fr}
+  .brief-feature{grid-column:auto}
+  .page-hero{height:320px;padding-top:76px}
+  .page-hero:before{width:560px;height:560px;right:-240px;top:-230px}
+  .page-hero h1{font-size:40px}
+  .page-word{right:-6%;bottom:-4px;font-size:92px}
+  .page-content{padding-top:28px}
+  .filter-bar{top:70px}
+  .card-grid{grid-template-columns:1fr}
+  .content-card{min-height:0}
+  .timeline-item{grid-template-columns:1fr;gap:6px;padding:22px}
+  .faq-grid{grid-template-columns:1fr}
+  .answer{padding-left:0}
+  .search-layer{padding:76px 12px 30px}
+  .search-input{height:54px;font-size:15px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{scroll-behavior:auto!important;animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="global-nav">
+    <button class="brand" data-view="home" aria-label="ホームへ"><span class="brand-mark">K</span><span class="brand-name">AI PORTAL</span></button>
+    <nav class="nav-links" id="navLinks" aria-label="メインメニュー"></nav>
+    <button class="nav-search" id="openSearch" aria-label="サイト内検索">⌕</button>
+  </header>
+
+  <main id="views">
+    <section class="view active" id="view-home">
+      <div class="hero">
+        <div class="hero-glow"></div><div class="hero-shade"></div><span class="hero-line"></span>
+        <div class="hero-copy">
+          <p class="kicker">Intelligence for everyone</p>
+          <h1>AIを、仕事のあたりまえに。</h1>
+          <p class="hero-lead" id="siteSubtitle"></p>
+          <div class="hero-actions">
+            <button class="primary" data-view="materials">はじめての方へ</button>
+            <button class="secondary" id="heroSearch">ポータルを検索</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-main"><div class="inner">
+        <div class="quick-grid">
+          <button class="quick-card" data-view="materials" style="--tone:#1670c5;--tint:#eaf5ff;--orb:linear-gradient(145deg,#62d8ff,#3d72ef)"><span class="quick-head"><span class="quick-icon">▤</span><span class="quick-count"></span><span class="quick-go">›</span></span><h3>まず使ってみる</h3><p>入門ガイドと社内ルール</p><ul class="quick-list" data-list="materials"></ul></button>
+          <button class="quick-card" data-view="cases" style="--tone:#0d8a62;--tint:#e8f8f2;--orb:linear-gradient(145deg,#6cf2bb,#11a77a)"><span class="quick-head"><span class="quick-icon">↗</span><span class="quick-count"></span><span class="quick-go">›</span></span><h3>活用事例</h3><p>現場から生まれた改善事例</p><ul class="quick-list" data-list="cases"></ul></button>
+          <button class="quick-card" data-view="tips" style="--tone:#b9690a;--tint:#fff6df;--orb:linear-gradient(145deg,#ffe96b,#ff8a31)"><span class="quick-head"><span class="quick-icon">✦</span><span class="quick-count"></span><span class="quick-go">›</span></span><h3>上手な頼み方</h3><p>すぐに使える実践ノウハウ</p><ul class="quick-list" data-list="tips"></ul></button>
+          <button class="quick-card" data-view="apps" style="--tone:#724bc0;--tint:#f2edff;--orb:linear-gradient(145deg,#d0a3ff,#6b56e8)"><span class="quick-head"><span class="quick-icon">◈</span><span class="quick-count"></span><span class="quick-go">›</span></span><h3>アプリ・スキル</h3><p>そのまま使える社内の道具</p><ul class="quick-list" data-list="apps"></ul></button>
+          <button class="quick-card" data-view="videos" style="--tone:#c9243f;--tint:#fff0f1;--orb:linear-gradient(145deg,#ff9d7a,#e0304f)"><span class="quick-head"><span class="quick-icon">▶</span><span class="quick-count"></span><span class="quick-go">›</span></span><h3>動画で学ぶ</h3><p>操作の細かいところは動画で</p><ul class="quick-list" data-list="videos"></ul></button>
+        </div>
+
+        <div class="section-heading">
+          <h2>最新情報</h2>
+          <span class="note">社内のお知らせと、世の中のAI活用トピックス</span>
+          <button class="text-link" data-view="news">すべて見る&nbsp;›</button>
+        </div>
+        <div class="brief">
+          <button class="brief-feature" id="briefFeature" data-view="news" data-focus="news-n0"></button>
+          <div class="brief-col"><div class="brief-cap">社内のお知らせ</div><div class="brief-rows" id="newsRows"></div></div>
+          <div class="brief-col"><div class="brief-cap">AIトピックス</div><div class="brief-rows" id="aiRows"></div></div>
+        </div>
+      </div></div>
+    </section>
+    <div id="dynamicViews"></div>
+  </main>
+
+  <footer class="site-footer" id="siteFooter"></footer>
+</div>
+
+<div class="search-layer" id="searchLayer" role="dialog" aria-modal="true" aria-label="サイト内検索">
+  <div class="search-panel">
+    <div class="search-head"><input class="search-input" id="searchInput" placeholder="資料、ノウハウ、活用事例を検索" autocomplete="off"><button class="search-close" id="closeSearch" aria-label="閉じる">×</button></div>
+    <div class="search-status" id="searchStatus">キーワードを入力してください</div>
+    <div class="result-list" id="searchResults"></div>
+  </div>
+</div>
+
+<script>
+(()=>{
+  const logs=[];
+  window.__portalErrors=logs;   /* 動作テスト用 */
+  const show=text=>{
+    logs.push(text);
+    let bar=document.getElementById("portalErrorBar");
+    if(!bar){
+      bar=document.createElement("div");
+      bar.id="portalErrorBar";
+      bar.setAttribute("role","alert");
+      bar.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:9999;background:#fff;border:1px solid #f0b4b4;border-left:6px solid #d93025;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.15);padding:14px 16px;font:14px/1.6 sans-serif;color:#1d1d1f;display:flex;gap:12px;align-items:center;flex-wrap:wrap";
+      let contact="表面処理技術部";try{contact=PORTAL_DATA.site.contact.name||contact}catch(_){}
+      bar.innerHTML='<div style="flex:1;min-width:240px"><b>表示に問題が起きました。</b>お手数ですが「内容をコピー」を押し、メールやTeamsに貼り付けて '+contact.replace(/[<>&"]/g,"")+' までお知らせください。</div>';
+      const copy=document.createElement("button");
+      copy.textContent="内容をコピー";
+      copy.style.cssText="border:0;border-radius:999px;background:#d93025;color:#fff;padding:8px 16px;font:inherit;cursor:pointer";
+      copy.onclick=()=>{
+        const body="AIポータルの不具合\n日時: "+new Date().toLocaleString()+"\n画面: "+document.title+"\nブラウザ: "+navigator.userAgent+"\n\n"+logs.join("\n");
+        const done=()=>{copy.textContent="コピーしました"};
+        if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(body).then(done,()=>fallback(body,done))}else fallback(body,done);
+      };
+      const close=document.createElement("button");
+      close.textContent="×";
+      close.setAttribute("aria-label","閉じる");
+      close.style.cssText="border:0;background:none;font-size:20px;cursor:pointer;color:#6e6e73";
+      close.onclick=()=>bar.remove();
+      bar.append(copy,close);
+      (document.body||document.documentElement).appendChild(bar);
+    }
+  };
+  const fallback=(text,done)=>{const t=document.createElement("textarea");t.value=text;document.body.appendChild(t);t.select();try{document.execCommand("copy");done()}catch(e){}t.remove()};
+  window.addEventListener("error",e=>{
+    if(e.target&&e.target!==window&&e.target.src){show("読み込めないファイル: "+e.target.src.split("?")[0].split("/").pop());return}
+    show((e.message||"不明なエラー")+(e.lineno?"（"+e.lineno+"行目）":""));
+  },true);
+  window.addEventListener("unhandledrejection",e=>show("処理の失敗: "+((e.reason&&e.reason.message)||e.reason)));
+})();
+</script>
+<style>
+#gate{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef2ff,#f7f0ff);font-family:"Yu Gothic UI","Meiryo",sans-serif}
+#gate .box{background:#fff;border-radius:18px;box-shadow:0 18px 50px rgba(40,40,90,.15);padding:32px 36px;width:min(420px,92vw)}
+#gate h1{font-size:20px;margin:0 0 6px}#gate p{color:#555;font-size:14px;line-height:1.7;margin:0 0 16px}
+#gate input{width:100%;box-sizing:border-box;font-size:16px;padding:10px 12px;border:1px solid #c9cde8;border-radius:10px}
+#gate button{margin-top:12px;width:100%;font-size:16px;padding:11px;border:0;border-radius:10px;color:#fff;background:linear-gradient(90deg,#3d6bff,#8a3ffc);cursor:pointer}
+#gate button:disabled{opacity:.6;cursor:wait}#gate .err{color:#c62828;font-size:13px;min-height:1.4em;margin-top:8px}
+</style>
+<div id="gate"><div class="box"><h1>AIポータル</h1><p id="gateMsg">読み込み中です…</p><form id="gateForm" hidden><input id="gatePw" type="password" autocomplete="current-password" placeholder="パスワード"><button id="gateBtn" type="submit">ひらく</button><div class="err" id="gateErr"></div></form></div></div>
+<script>
+(()=>{
+  const CFG_KEY="aiportal.cfg",SES_KEY="aiportal.session";
+  const $=id=>document.getElementById(id);
+  const ls={get:k=>{try{return JSON.parse(localStorage.getItem(k)||"null")}catch(_){return null}},
+            set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}},
+            del:k=>{try{localStorage.removeItem(k)}catch(_){}}};
+  const m=location.hash.match(/setup=([A-Za-z0-9_-]+)/);
+  if(m){try{const j=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,"+").replace(/_/g,"/")))));
+    if(j.u&&j.k&&j.e)ls.set(CFG_KEY,j)}catch(_){}
+    history.replaceState(null,"",location.pathname+location.search)}
+  const cfg=ls.get(CFG_KEY);
+  if(!cfg){$("gateMsg").innerHTML="はじめての方は、配布された<b>「初回用のリンク」</b>から一度開いてください。<br>2回目からは、このページを直接開けます。";return}
+  const H=t=>({apikey:cfg.k,Authorization:"Bearer "+(t||cfg.k),"Content-Type":"application/json"});
+  const auth=(grant,body)=>fetch(cfg.u+"/auth/v1/token?grant_type="+grant,{method:"POST",headers:H(),body:JSON.stringify(body)})
+    .then(r=>r.ok?r.json():r.json().then(e=>Promise.reject(new Error(e.error_description||e.msg||("認証エラー "+r.status)))))
+    .then(s=>{const v={a:s.access_token,r:s.refresh_token,x:Date.now()+(s.expires_in-60)*1000};ls.set(SES_KEY,v);return v});
+  const session=()=>{const s=ls.get(SES_KEY);if(!s)return Promise.resolve(null);
+    if(s.x>Date.now())return Promise.resolve(s);
+    return auth("refresh_token",{refresh_token:s.r}).catch(()=>{ls.del(SES_KEY);return null})};
+  const showLogin=msg=>{$("gateMsg").textContent="社内のClaude利用者向けのページです。共通のパスワードを入れてください。";
+    $("gateForm").hidden=false;$("gateErr").textContent=msg||"";$("gatePw").focus()};
+  $("gateForm").addEventListener("submit",e=>{e.preventDefault();$("gateBtn").disabled=true;$("gateErr").textContent="";
+    auth("password",{email:cfg.e,password:$("gatePw").value}).then(open)
+      .catch(()=>{$("gateBtn").disabled=false;showLogin("パスワードが違うか、接続できませんでした。")})});
+  function open(s){
+    $("gateMsg").textContent="読み込み中です…";$("gateForm").hidden=true;
+    fetch(cfg.u+"/rest/v1/portal_store?key=eq.data&select=value",{headers:H(s.a)})
+      .then(r=>{if(r.status===401){ls.del(SES_KEY);throw new Error("login")}if(!r.ok)throw new Error("データ取得 "+r.status);return r.json()})
+      .then(rows=>{if(!rows.length)throw new Error("データが空です（02_data.sql 未実行）");const D=rows[0].value;
+        const paths=[...new Set((D.cases||[]).map(c=>c.image).filter(Boolean).map(p=>p.replace(/^assets\//,"")))];
+        const signed=paths.length?fetch(cfg.u+"/storage/v1/object/sign/portal",{method:"POST",headers:H(s.a),body:JSON.stringify({expiresIn:43200,paths})})
+          .then(r=>r.ok?r.json():[]):Promise.resolve([]);
+        return signed.then(list=>{const map={};(list||[]).forEach(x=>{if(x.signedURL)map["assets/"+x.path]=cfg.u+"/storage/v1"+x.signedURL});
+          (D.cases||[]).forEach(c=>{if(c.image&&map[c.image])c.image=map[c.image]});return D})})
+      .then(D=>{
+        window.PORTAL_DATA=D;
+        window.PORTAL_APP_FILES={};(D.apps||[]).forEach(a=>{if(a.file)window.PORTAL_APP_FILES[a.file]="remote"});
+        window.__portalFetchApp=name=>session().then(t=>fetch(cfg.u+"/storage/v1/object/authenticated/portal/apps/"+encodeURIComponent(name),{headers:H(t&&t.a)}))
+          .then(r=>{if(!r.ok)throw new Error("アプリ取得 "+r.status);return r.text()});
+        const sc=document.createElement("script");sc.textContent=$("portal-main").textContent;document.body.appendChild(sc);
+        $("gate").remove();
+      })
+      .catch(err=>{if(err.message==="login")showLogin("もう一度パスワードを入れてください。");else{$("gateMsg").textContent="読み込めませんでした（"+err.message+"）";throw err}});
+  }
+  session().then(s=>s?open(s):showLogin());
+})();
+</script>
+<script type="text/plain" id="portal-main">
+(()=>{
+  const D=PORTAL_DATA;
+  const esc=value=>String(value??"").replace(/[&<>\"]/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[char]));
+  const plain=value=>String(value??"").replace(/\\n|\n/g," ");
+  const htmlText=value=>esc(value).replace(/\\n|\n/g,"<br>");
+  const date=value=>String(value??"").replaceAll("-","/");
+  const pages=[
+    {key:"home",label:"ホーム"},
+    {key:"news",label:"新着情報",word:"NEWS",desc:"AI活用に関する社内のお知らせ。",orb:"radial-gradient(circle,#4bd6ff 0,#3074ed 23%,#6f35ce 46%,transparent 69%)"},
+    {key:"materials",label:"使い方・資料",word:"LIBRARY",desc:"はじめての方から実践者まで。必要な資料を、すぐに。",orb:"radial-gradient(circle,#67f0d4 0,#0c91b5 23%,#2649d4 46%,transparent 69%)"},
+    {key:"videos",label:"動画で学ぶ",word:"VIDEOS",desc:"世の中の分かりやすい解説動画へのリンク集。細かい操作は、動画で見るのがいちばん早いです。",orb:"radial-gradient(circle,#ff9d7a 0,#ef3a5a 23%,#a01f95 47%,transparent 69%)"},
+    {key:"cases",label:"活用事例",word:"CASES",desc:"現場の困りごとから生まれた、AIによる業務改善。",orb:"radial-gradient(circle,#8affbf 0,#16af7e 23%,#08738b 47%,transparent 69%)"},
+    {key:"tips",label:"ノウハウ",word:"IDEAS",desc:"AIから良い答えを引き出す、実務に効く小さなコツ。",orb:"radial-gradient(circle,#ffe96f 0,#ff8e36 22%,#c12680 47%,transparent 69%)"},
+    {key:"apps",label:"アプリ・スキル",word:"TOOLS",desc:"社内で作った道具をここに集約。ブラウザで開くアプリと、配布中のスキル。",orb:"radial-gradient(circle,#d5a1ff 0,#805dff 23%,#3244bb 47%,transparent 69%)"},
+    {key:"faq",label:"FAQ",word:"FAQ",desc:"アカウント、社内ルール、使い方で迷ったときに。",orb:"radial-gradient(circle,#ff98cc 0,#bc58e6 23%,#5140ba 47%,transparent 69%)"}
+  ];
+  const pageOf=key=>pages.find(page=>page.key===key);
+  document.title=D.site.title;
+  document.querySelector("#siteSubtitle").textContent="AIの使い方、活用事例、便利なスキルをひとつの場所に。";
+  document.querySelector("#siteFooter").textContent=`${D.site.title}　｜　社内限定　｜　最終更新 ${date(D.site.updated)}${window.PORTAL_BUILD?"（配布版 "+date(window.PORTAL_BUILD)+" 作成）":""}　｜　内容の追加・修正は ${D.site.contact.name} まで`;
+  document.querySelector("#navLinks").innerHTML=pages.map((page,index)=>`<button class="nav-link${index===0?" on":""}" data-view="${page.key}">${page.label}</button>`).join("");
+
+  const news=D.news||[],aiNews=D.aiNews||[];
+
+  /* ---- 入口カードの中身（各セクションの件数と、先頭いくつかの見出し） ---- */
+  /* 資料は必ず「入門 → ルール → 実践 → 活用事例集」の順で並べる。
+     data.js に活用事例集を書き足しても、はじめての人が入門資料より先に事例を踏まないようにするため。 */
+  const LEVEL_ORDER={"入門":0,"ルール":1,"実践":2,"活用事例集":3};
+  const MATERIALS=[...(D.materials||[])].sort((a,b)=>(LEVEL_ORDER[a.level]??9)-(LEVEL_ORDER[b.level]??9));
+
+  /* 活用事例は data.js の caseOrder（題名の並び）順に表示する。無い題名は末尾に元の順で */
+  const orderCases=()=>{const ord=(D.caseOrder||[]).map(t=>String(t).trim());
+    return [...D.cases].sort((a,b)=>{const ia=ord.indexOf(a.title),ib=ord.indexOf(b.title);
+      return (ia<0?1e9:ia)-(ib<0?1e9:ib);});};
+  let CASES=orderCases();
+  /* ---- アプリ ---- */
+  /* file を書いたものは assets/apps/ のHTMLを開く。ワンファイル版では PORTAL_APP_FILES に
+     中身（gzip→base64）が埋め込まれ、手元にファイルが無くても開ける（下の openApp を参照） */
+  const APPS=D.apps||[];
+  /* ---- 動画（YouTube）: リンクを開くだけ。社内の情報は送っていない ---- */
+  const VIDEOS=D.videos||[];
+  const APP_FILES=(typeof PORTAL_APP_FILES!=="undefined")?PORTAL_APP_FILES:null;
+
+  const quickItems={
+    /* 「まず使ってみる」は入門ガイドと社内ルールの入口。活用事例は専用の入口カードがあるので
+       ここには出さない（件数も入門＋ルールだけ数える。2026-08-27） */
+    materials:MATERIALS.filter(item=>item.level!=="活用事例集").map(item=>item.title),
+    tips:D.tips.map(item=>item.title),
+    cases:CASES.map(item=>item.title),
+    apps:APPS.map(item=>item.name),
+    /* 動画のタイトルは長いので、ホームでは short（短い名前）を出す */
+    videos:VIDEOS.map(item=>item.short||item.title)
+  };
+  document.querySelectorAll("[data-list]").forEach(element=>{
+    const items=quickItems[element.dataset.list]||[];
+    element.innerHTML=items.length?items.slice(0,6).map(title=>`<li>${esc(title)}</li>`).join(""):`<li>準備中です</li>`;
+    const badge=element.closest(".quick-card").querySelector(".quick-count");
+    if(badge)badge.textContent=`${items.length}件`;
+  });
+
+  /* ---- 最新情報：社内のお知らせとAIトピックスを同時に表示 ---- */
+  const feature=document.querySelector("#briefFeature");
+  if(news.length)feature.innerHTML=`<div class="meta"><span class="pill">PICK UP</span><span>${date(news[0].date)}</span><span>#${esc(news[0].tag)}</span></div><h3>${esc(news[0].title)}</h3><p>${htmlText(news[0].body)}</p>`;
+  else feature.hidden=true;
+  const briefRow=(lead,title,dot,focus)=>`<button class="brief-row${dot?" dot":""}" data-view="news" data-focus="${focus}">${lead}<b>${esc(title)}</b></button>`;
+  document.querySelector("#newsRows").innerHTML=news.slice(1,5).map((item,i)=>briefRow(`<time>${date(item.date).slice(5)}</time>`,item.title,false,`news-n${i+1}`)).join("")||`<div class="empty">—</div>`;
+  document.querySelector("#aiRows").innerHTML=aiNews.slice(0,4).map((item,i)=>briefRow(`<span class="bullet"></span>`,item.title,true,`news-a${i}`)).join("")||`<div class="empty">—</div>`;
+
+  /* ---- 下層ページ ---- */
+  const pageHero=page=>`<header class="page-hero" style="--page-orb:${page.orb}"><div class="page-hero-copy"><button class="back" data-view="home">← ホームへ戻る</button><h1>${page.label}</h1><p>${page.desc}</p></div><span class="page-word">${page.word}</span><span class="hero-line"></span></header>`;
+  const tag=(text,kind="")=>`<span class="tag ${kind}">${esc(text)}</span>`;
+  const levelKind=level=>level==="ルール"?"rule":level==="入門"?"beginner":level==="実践"?"practice":"";
+  const filters=values=>`<div class="filter-bar">${values.map((value,index)=>`<button class="filter${index===0?" on":""}" data-filter="${esc(value)}">${esc(value)}</button>`).join("")}</div>`;
+  const searchable=(section,title,body,extra="")=>`data-section="${esc(section)}" data-title="${esc(title)}" data-body="${esc(plain(body))}" data-search="${esc((title+" "+plain(body)+" "+extra).toLowerCase())}"`;
+
+  function newsPage(){return `<div class="timeline">${news.map((item,i)=>`<article class="timeline-item" id="news-n${i}" ${searchable("新着情報",item.title,item.body,item.tag)}><time>${date(item.date)}<br>${tag(item.tag)}</time><div><h3>${esc(item.title)}</h3><p>${htmlText(item.body)}</p></div></article>`).join("")}${aiNews.map((item,i)=>`<article class="timeline-item" id="news-a${i}" ${searchable("新着情報",item.title,item.body,"AIトピックス")}><time>${tag("AIトピックス")}</time><div><h3>${esc(item.title)}</h3><p>${htmlText(item.body)}</p></div></article>`).join("")}</div>`}
+  /* 資料のURLを作る。PDFで #page= の指定が無いときは #page=1 を付けて必ず先頭ページで開く
+     （SharePointのPDFビューアーは前回読んでいた位置を覚えて途中から開くため、それを打ち消す）
+     活用事例のように file に #page=9 と書いてあるものは、その指定のまま開く */
+  const fileHref=file=>{
+    if(/^(assets\/|data:)/.test(file||""))return file;   // ポータルの中に持っている物（zip等）はそのまま
+    const raw=/^https?:/i.test(file||"")?file:D.site.fileBase+(file||"");
+    return /\.pdf($|[?#])/i.test(raw)&&!/#page=/i.test(raw)?raw+"#page=1":raw;
+  };
+  function firstStep(){
+    const pick=level=>MATERIALS.find(item=>item.level===level);
+    const intro=pick("入門"),rule=pick("ルール");
+    const step=(no,text,item)=>`<li><span class="step-no">${no}</span>${item?`<a href="${esc(fileHref(item.file))}" target="_blank" rel="noopener">${text}</a>`:text}</li>`;
+    return `<div class="firststep"><div class="firststep-cap">はじめての方へ　まずこの3つ</div><ol class="firststep-list">`
+      +step(1,`『${esc(intro?intro.title:"Claude入門資料")}』を読んで、何ができるかを知る`,intro)
+      +step(2,`『${esc(rule?rule.title:"Claude利用ガイドライン")}』で、入れてよい情報を確かめる`,rule)
+      +step(3,"身近な仕事を1つ、そのまま頼んでみる（メール文・議事録・Excelの集計）",null)
+      +`</ol></div>`;
+  }
+  function materialsPage(){const levels=["すべて",...new Set(MATERIALS.map(item=>item.level))];return firstStep()+filters(levels)+`<div class="card-grid filter-grid">${MATERIALS.map((item,index)=>{const href=fileHref(item.file);return `<a class="content-card" style="--card-orb:${index%3===1?"linear-gradient(145deg,#65e8d1,#1689a7)":index%3===2?"linear-gradient(145deg,#c6a8ff,#7658e8)":"linear-gradient(145deg,#72d9ff,#5571ed)"}" data-category="${esc(item.level)}" ${searchable("使い方・資料",item.title,item.desc,item.level+" "+item.type)} href="${esc(href)}" ${item.download?`download="${esc(item.download)}"`:`target="_blank" rel="noopener"`}><div class="tags">${tag(item.level,levelKind(item.level))}${tag(item.type)}</div><h3>${esc(item.title)}</h3><p>${htmlText(item.desc)}</p><div class="card-footer">${item.download?"ダウンロード ↓":"資料を開く ↗"}</div></a>`}).join("")}</div>`}
+  function tipsPage(){const cats=["すべて",...new Set(D.tips.map(item=>item.category))];return filters(cats)+`<div class="card-grid filter-grid">${D.tips.map((item,index)=>`<article class="content-card" style="--card-orb:${index%2?"linear-gradient(145deg,#f6a7d5,#9d55e6)":"linear-gradient(145deg,#ffe578,#ff8439)"}" data-category="${esc(item.category)}" ${searchable("ノウハウ",item.title,item.body,item.category)}><div class="tags">${tag(item.category)}</div><h3>${esc(item.title)}</h3><p>${htmlText(item.body)}</p></article>`).join("")}</div>`}
+  function casesPage(){return `<div class="card-grid">${CASES.map(item=>{
+    const link=item.file?fileHref(item.file):"";
+    const page=(String(item.file||"").match(/#page=(\d+)/)||[])[1];
+    const shot=item.image?`<span class="case-shot"><img src="${esc(item.image)}" alt="${esc(item.title)}のスライド" loading="lazy"></span>`
+                         :`<span class="case-shot blank" data-word="資料は準備中です"></span>`;
+    const inner=`${shot}<div class="case-body"><div class="department">${esc(item.dept)}</div><h3>${esc(item.title)}</h3><p>${htmlText(item.desc)}</p><div class="outcome">✓ ${esc(item.result)}</div>${link?`<div class="card-footer">資料を見る${page?`（P.${page}）`:""} ↗</div>`:`<div class="case-note">資料は準備中です</div>`}</div>`;
+    const attrs=`class="content-card case-card" ${searchable("活用事例",item.title,item.desc,item.dept+" "+item.result)}`;
+    return link?`<a ${attrs} href="${esc(link)}" target="_blank" rel="noopener">${inner}</a>`:`<article ${attrs}>${inner}</article>`;
+  }).join("")}</div>`}
+  /* 動画で学ぶ: 世の中の解説動画へのリンク集。data.js の videos が正本。
+     リンクを開くだけなので社内の情報は外に出ない。会社の資料ではない点は冒頭で断っている */
+  function videosPage(){
+    if(!VIDEOS.length)return `<div class="card-grid"><article class="content-card"><div class="tags">${tag("準備中")}</div><h3>準備中です</h3><p>おすすめの解説動画をここに載せます。良い動画をご存じの方は ${esc(D.site.contact.name)} まで。</p></article></div>`;
+    const cats=["すべて",...new Set(VIDEOS.map(item=>item.category||"その他"))];
+    const note=`<div class="page-note"><b>細かい操作でつまずいたら、まず動画を見てください。</b>カードには「どんな動画か・誰向けか」を書いてあるので、自分の困りごとに近いものから。押すとYouTubeが新しいタブで開きます。<br>これらは社内で作った資料ではなく、内容は各動画の投稿者のものです。アカウントの取り方や入れてよい情報の範囲など、会社の環境と違うところは<b>社内の資料とルールが優先</b>です。おすすめの動画があれば ${esc(D.site.contact.name)} まで。すぐ載せます。</div>`;
+    return note+(cats.length>2?filters(cats):"")+`<div class="card-grid filter-grid">${VIDEOS.map((item,index)=>{
+      const cat=item.category||"その他";
+      const orb=index%3===1?"linear-gradient(145deg,#ffc48a,#f0543c)":index%3===2?"linear-gradient(145deg,#ffa7c4,#d4358f)":"linear-gradient(145deg,#ff9d7a,#e0304f)";
+      return `<a class="content-card video-card" style="--card-orb:${orb}" data-category="${esc(cat)}" ${searchable("動画で学ぶ",item.title,item.desc,cat+" "+(item.channel||"")+" 動画 YouTube")} href="${esc(item.url)}" target="_blank" rel="noopener"><div class="tags">${tag("YouTube","rule")}${tag(cat)}</div><h3><span class="play">▶</span><span>${esc(item.title)}</span></h3><p>${htmlText(item.desc)}</p>${item.channel?`<div class="tool-place">投稿者　${esc(item.channel)}</div>`:""}<div class="card-footer">YouTubeで見る ↗</div></a>`;
+    }).join("")}</div>`;
+  }
+  function faqPage(){return `<div class="faq-grid">${D.faq.map(item=>`<details class="faq-item" ${searchable("FAQ",item.q,item.a)}><summary><span class="qmark">Q</span><span>${esc(item.q)}</span></summary><div class="answer">${htmlText(item.a)}</div></details>`).join("")}</div>`}
+  /* アプリ・システム・スキルを1ページにまとめて出す。開き方は type で決まる:
+       アプリ／システム … file にHTMLを書く → assets/apps/ のそれを開く（ワンファイル版は中身を埋め込み）
+                          外部サイトのものは url を書く
+       スキル           … file にSharePointのzipを書く → ダウンロード。無ければ place（入手先）だけ出す */
+  function appsPage(){
+    if(!APPS.length)return `<div class="card-grid"><article class="content-card"><div class="tags">${tag("準備中")}</div><h3>準備中です</h3><p>社内で作ったアプリ・スキルをここに掲載します。ご希望のものがあれば ${esc(D.site.contact.name)} まで。</p></article></div>`;
+    const types=["すべて",...new Set(APPS.map(item=>item.type||"アプリ"))];
+    /* 種類が1つしか無いうちは絞り込みタブを出さない（「すべて／アプリ」だけ並ぶのを避ける） */
+    return (types.length>2?filters(types):"")+`<div class="card-grid filter-grid">${APPS.map((item,index)=>{
+      const type=item.type||"アプリ";
+      const isSkill=type==="スキル";
+      const web=!isSkill&&!!item.file;                              /* ブラウザで開くHTML */
+      const href=item.url?item.url:web?"assets/apps/"+encodeURIComponent(item.file):item.file?fileHref(item.file):"";
+      const orb=index%3===1?"linear-gradient(145deg,#9fe0ff,#4a70e8)":index%3===2?"linear-gradient(145deg,#ffd08a,#f2683c)":"linear-gradient(145deg,#d3a5ff,#6956df)";
+      const inner=`<div class="tags">${tag(type,isSkill?"":"practice")}${item.category?tag(item.category):""}${item.url?tag("外部サイト"):""}</div>`
+        +(item.dept?`<div class="department">${esc(item.dept)}</div>`:"")
+        +`<h3>${esc(item.name)}</h3><p>${htmlText(item.desc)}</p>`
+        +(item.result?`<div class="outcome">✓ ${esc(item.result)}</div>`:"")
+        +(item.place?`<div class="tool-place">入手先　${esc(item.place)}</div>`:"")
+        +(href?`<div class="card-footer">${isSkill?"ダウンロード":"開く"} ↗</div>`:"");
+      const attrs=`class="content-card app-card" style="--card-orb:${orb}" data-category="${esc(type)}"`
+        +(web&&!item.url?` data-app="${esc(item.file)}"`:"")
+        +` ${searchable("アプリ・スキル",item.name,item.desc,type+" "+(item.category||"")+" "+(item.dept||""))}`;
+      return href?`<a ${attrs} href="${esc(href)}" target="_blank" rel="noopener">${inner}</a>`:`<article ${attrs}>${inner}</article>`;
+    }).join("")}</div>`}
+
+  /* ワンファイル版で、埋め込んであるアプリを新しいタブに書き出して開く。
+     クリックの中で window.open するのが肝心（先に読み込むとポップアップが止められる） */
+  document.addEventListener("click",event=>{
+    const link=event.target.closest("a[data-app]");
+    if(!link||!APP_FILES)return;
+    const packed=APP_FILES[link.dataset.app];
+    if(!packed)return;
+    event.preventDefault();
+    const win=window.open("","_blank");
+    if(!win){alert("アプリを開けませんでした。ブラウザのポップアップの許可を確認してください。");return}
+    win.document.write('<!doctype html><meta charset="utf-8"><title>読み込み中…</title><p style="font:14px sans-serif;padding:24px">読み込み中です…</p>');
+    (packed==="remote"?window.__portalFetchApp(link.dataset.app):new Response(new Blob([Uint8Array.from(atob(packed),ch=>ch.charCodeAt(0))]).stream().pipeThrough(new DecompressionStream("gzip"))).text())
+      .then(html=>{
+        try{win.document.open();win.document.write(html);win.document.close()}
+        catch(e){win.location.href=URL.createObjectURL(new Blob([html],{type:"text/html"}))}
+      })
+      .catch(err=>{win.document.body.innerHTML='<p style="font:14px sans-serif;padding:24px">アプリを開けませんでした（'+esc(err.message)+'）</p>'});
+  });
+
+  const builders={news:newsPage,materials:materialsPage,videos:videosPage,tips:tipsPage,cases:casesPage,apps:appsPage,faq:faqPage};
+  document.querySelector("#dynamicViews").innerHTML=pages.slice(1).map(page=>`<section class="view" id="view-${page.key}">${pageHero(page)}<div class="page-content"><div class="inner">${builders[page.key]()}</div></div></section>`).join("");
+
+  /* ---- 並べ替えモード（正本専用・活用事例ページで Ctrl+Shift+E） ----
+     ドラッグで順番を入れ替え→「新しい順番をコピー」→ data.js の caseOrder の1行と入れ替えて保存。
+     ワンファイル版を作るとき EDIT_ALLOWED が false に差し替わる＝配布先では動かない。 */
+  const EDIT_ALLOWED=false;
+  window.__editAllowed=EDIT_ALLOWED;   /* 動作テスト用（配布版では false になる） */
+  let editing=false,editOrder=null,dragFrom=-1;
+  const casesInner=()=>document.querySelector("#view-cases .page-content .inner");
+  function reorderLine(list){return "  caseOrder: ["+(list||editOrder||CASES).map(c=>JSON.stringify(c.title)).join(", ")+"],";}
+  window.__reorderLine=()=>reorderLine();
+  function renderCasesView(){casesInner().innerHTML=casesPage();if(editing)decorateEdit();}
+  function decorateEdit(){
+    const grid=casesInner().querySelector(".card-grid");
+    grid.classList.add("editing");
+    [...grid.children].forEach((card,index)=>{card.draggable=true;card.dataset.index=index;});
+    grid.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();},true);
+    grid.addEventListener("dragstart",e=>{const c=e.target.closest("[data-index]");if(!c)return;
+      dragFrom=+c.dataset.index;e.dataTransfer.setData("text/plain",c.dataset.index);e.dataTransfer.effectAllowed="move";});
+    grid.addEventListener("dragover",e=>{e.preventDefault();e.dataTransfer.dropEffect="move";
+      const c=e.target.closest("[data-index]");
+      [...grid.children].forEach(x=>x.classList.toggle("dragover",x===c&&+c.dataset.index!==dragFrom));});
+    grid.addEventListener("dragleave",e=>{const c=e.target.closest("[data-index]");if(c)c.classList.remove("dragover");});
+    grid.addEventListener("drop",e=>{e.preventDefault();const c=e.target.closest("[data-index]");if(!c||dragFrom<0)return;
+      const to=+c.dataset.index;if(to===dragFrom)return;
+      const moved=editOrder.splice(dragFrom,1)[0];editOrder.splice(to,0,moved);
+      CASES=editOrder;dragFrom=-1;renderCasesView();});
+  }
+  function toggleEdit(){
+    if(!EDIT_ALLOWED)return;
+    editing=!editing;
+    let bar=document.querySelector("#reorderBar");
+    if(editing){
+      editOrder=[...CASES];CASES=editOrder;
+      if(!bar){bar=document.createElement("div");bar.id="reorderBar";bar.className="reorder-bar";
+        bar.innerHTML=`<b>並べ替えモード</b><span>カードをドラッグして順番を入れ替え</span>`
+          +`<button id="reorderCopy">新しい順番をコピー</button><button id="reorderExit">終了</button><em id="reorderMsg"></em>`;
+        document.body.appendChild(bar);
+        bar.querySelector("#reorderExit").addEventListener("click",toggleEdit);
+        bar.querySelector("#reorderCopy").addEventListener("click",()=>{
+          const line=reorderLine();
+          const done=()=>{bar.querySelector("#reorderMsg").textContent="コピーしました。data.js の caseOrder: の行とまるごと入れ替えて保存 → F5";};
+          if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(line).then(done,()=>prompt("この1行を data.js の caseOrder: の行と入れ替えてください",line));
+          else prompt("この1行を data.js の caseOrder: の行と入れ替えてください",line);
+          done();
+        });
+      }
+      bar.hidden=false;renderCasesView();
+    }else{
+      if(bar)bar.hidden=true;
+      CASES=orderCases();editOrder=null;renderCasesView();
+      const badge=document.querySelector('.quick-card[data-view="cases"] [data-list]');
+    }
+  }
+  document.addEventListener("keydown",e=>{
+    if(e.ctrlKey&&e.shiftKey&&e.code==="KeyE"&&document.querySelector(".view.active")?.id==="view-cases"){e.preventDefault();toggleEdit();}
+  });
+
+  function showView(key,push=true){
+    const target=document.querySelector(`#view-${key}`);if(!target)return;
+    document.querySelectorAll(".view").forEach(view=>view.classList.toggle("active",view===target));
+    document.querySelectorAll(".nav-link").forEach(link=>link.classList.toggle("on",link.dataset.view===key));
+    document.body.classList.toggle("home-active",key==="home");
+    if(push&&history.replaceState)history.replaceState(null,"",key==="home"?location.pathname:`#${key}`);
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+  /* ホームの見出しを押したとき、新着情報ページの「その記事」まで送って光らせる
+     （押しても一覧の先頭に出るだけで、どれのことか分からなかったのを直した 2026-09-02） */
+  function focusItem(id){
+    if(!id)return;
+    setTimeout(()=>{
+      const item=document.getElementById(id);if(!item)return;
+      item.scrollIntoView({behavior:"smooth",block:"center"});
+      document.querySelectorAll(".timeline-item.flash").forEach(el=>el.classList.remove("flash"));
+      item.classList.add("flash");
+      setTimeout(()=>item.classList.remove("flash"),2600);
+    },220);
+  }
+  /* 絞り込み中のページへ検索から飛ぶと、目的の項目が隠れたままになるので「すべて」に戻す */
+  function resetFilter(key){
+    const section=document.querySelector(`#view-${key}`);if(!section)return;
+    const all=section.querySelector(".filter");
+    if(all&&!all.classList.contains("on"))all.click();
+  }
+  document.addEventListener("click",event=>{
+    const viewButton=event.target.closest("[data-view]");
+    if(viewButton&&viewButton.dataset.view){event.preventDefault();showView(viewButton.dataset.view);focusItem(viewButton.dataset.focus)}
+    const filterButton=event.target.closest("[data-filter]");
+    if(filterButton){const container=filterButton.closest(".page-content");
+      container.querySelectorAll(".filter").forEach(button=>button.classList.toggle("on",button===filterButton));
+      container.querySelectorAll("[data-category]").forEach(card=>{card.hidden=filterButton.dataset.filter!=="すべて"&&card.dataset.category!==filterButton.dataset.filter})}
+  });
+
+  const layer=document.querySelector("#searchLayer"),input=document.querySelector("#searchInput"),status=document.querySelector("#searchStatus"),results=document.querySelector("#searchResults");
+  function openSearch(){layer.classList.add("open");document.body.classList.add("lock");setTimeout(()=>input.focus(),50)}
+  function closeSearch(){layer.classList.remove("open");document.body.classList.remove("lock")}
+  function runSearch(query){
+    const q=query.trim().toLowerCase();
+    if(!q){status.textContent="キーワードを入力してください";results.innerHTML="";return}
+    const hits=[...document.querySelectorAll("[data-search]")].filter(item=>item.dataset.search.includes(q));
+    status.textContent=`「${query.trim()}」の検索結果　${hits.length}件`;
+    results.innerHTML=hits.length?hits.map((item,index)=>`<button class="result" data-result="${index}"><small>${esc(item.dataset.section)}</small><b>${esc(item.dataset.title)}</b><p>${esc(item.dataset.body)}</p></button>`).join(""):`<div class="empty">該当する情報がありません。<br>別の言葉で検索してください。</div>`;
+    results.querySelectorAll("[data-result]").forEach((button,index)=>button.onclick=()=>{
+      const section=hits[index].dataset.section;
+      const map={"新着情報":"news","使い方・資料":"materials","動画で学ぶ":"videos","ノウハウ":"tips","活用事例":"cases","アプリ・スキル":"apps","FAQ":"faq"};
+      const key=map[section]||"home";
+      closeSearch();showView(key);resetFilter(key)});
+  }
+  document.querySelector("#openSearch").onclick=openSearch;
+  document.querySelector("#heroSearch").onclick=openSearch;
+  document.querySelector("#closeSearch").onclick=closeSearch;
+  input.addEventListener("input",event=>runSearch(event.target.value));
+  layer.addEventListener("click",event=>{if(event.target===layer)closeSearch()});
+  document.addEventListener("keydown",event=>{
+    if(event.key==="Escape")closeSearch();
+    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k"){event.preventDefault();openSearch()}
+  });
+  const initial=location.hash.slice(1);showView(pageOf(initial)?initial:"home",false);
+})();
+</script>
+</body>
+</html>
