@@ -559,9 +559,10 @@ p{margin:0;overflow-wrap:break-word;text-wrap:pretty}
     history.replaceState(null,"",location.pathname+location.search)}
   const cfg=ls.get(CFG_KEY);
   if(!cfg){$("gateMsg").innerHTML="はじめての方は、配布された<b>「初回用のリンク」</b>から一度開いてください。<br>2回目からは、このページを直接開けます。";return}
-  const H=t=>({apikey:cfg.k,Authorization:"Bearer "+(t||cfg.k),"Content-Type":"application/json"});
+  // 新しい形式の公開用キー（sb_publishable_）はJWTではないので Authorization には入れない。入れるのはログイン後のトークンだけ
+  const H=t=>{const h={apikey:cfg.k,"Content-Type":"application/json"};if(t)h.Authorization="Bearer "+t;return h};
   const auth=(grant,body)=>fetch(cfg.u+"/auth/v1/token?grant_type="+grant,{method:"POST",headers:H(),body:JSON.stringify(body)})
-    .then(r=>r.ok?r.json():r.json().then(e=>Promise.reject(new Error(e.error_description||e.msg||("認証エラー "+r.status)))))
+    .then(r=>r.ok?r.json():r.json().catch(()=>({})).then(e=>Promise.reject(new Error((e.error_code||e.error||"")+" "+(e.error_description||e.msg||e.message||"")+" ("+r.status+")"))))
     .then(s=>{const v={a:s.access_token,r:s.refresh_token,x:Date.now()+(s.expires_in-60)*1000};ls.set(SES_KEY,v);return v});
   const session=()=>{const s=ls.get(SES_KEY);if(!s)return Promise.resolve(null);
     if(s.x>Date.now())return Promise.resolve(s);
@@ -570,7 +571,8 @@ p{margin:0;overflow-wrap:break-word;text-wrap:pretty}
     $("gateForm").hidden=false;$("gateErr").textContent=msg||"";$("gatePw").focus()};
   $("gateForm").addEventListener("submit",e=>{e.preventDefault();$("gateBtn").disabled=true;$("gateErr").textContent="";
     auth("password",{email:cfg.e,password:$("gatePw").value}).then(open)
-      .catch(()=>{$("gateBtn").disabled=false;showLogin("パスワードが違うか、接続できませんでした。")})});
+      .catch(e=>{$("gateBtn").disabled=false;const t=String(e&&e.message||e);
+        showLogin(/invalid_credentials|Invalid login/i.test(t)?"パスワードが違います。":"ログインできませんでした（"+t.trim()+"）")})});
   function open(s){
     $("gateMsg").textContent="読み込み中です…";$("gateForm").hidden=true;
     fetch(cfg.u+"/rest/v1/portal_store?key=eq.data&select=value",{headers:H(s.a)})
